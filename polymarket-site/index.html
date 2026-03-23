@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crypto Markets — Live 5M &amp; 15M</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0c0c0e;
+    --surface: #141417;
+    --surface2: #1c1c21;
+    --border: #2a2a32;
+    --text: #e8e8f0;
+    --muted: #6b6b7e;
+    --green: #00d97e;
+    --red: #ff4d6d;
+    --blue: #4d9eff;
+    --amber: #ffb830;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 54px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    gap: 12px;
+  }
+
+  .logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .live-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 1.8s ease-in-out infinite;
+  }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .header-tabs {
+    display: flex;
+    gap: 2px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px;
+  }
+
+  .tab {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 5px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--muted);
+    border: none;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+  }
+
+  .tab.active { background: var(--surface2); color: var(--text); }
+
+  .clock {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  /* ASSET TABS */
+  .asset-bar {
+    display: flex;
+    gap: 8px;
+    padding: 16px 20px 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .asset-bar::-webkit-scrollbar { display: none; }
+
+  .asset-tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    background: var(--surface);
+    white-space: nowrap;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .asset-tab:hover { border-color: #3a3a45; color: var(--text); }
+  .asset-tab.active { border-color: var(--blue); color: var(--text); background: rgba(77,158,255,0.08); }
+
+  .asset-icon {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: white; flex-shrink: 0;
+  }
+  .btc { background: #f7931a; }
+  .eth { background: #627eea; }
+  .sol { background: #9945ff; }
+  .xrp { background: #00aae4; }
+
+  /* MAIN */
+  .main {
+    padding: 16px 20px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .section-title {
+    font-size: 17px;
+    font-weight: 700;
+  }
+
+  .refresh-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s;
+  }
+  .refresh-btn:hover { color: var(--text); border-color: #3a3a45; }
+  .refresh-btn.spinning span { display: inline-block; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* CARD */
+  .market-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 14px;
+    transition: border-color 0.2s;
+  }
+
+  .market-card.live { border-color: rgba(0,217,126,0.25); }
+
+  .card-header {
+    padding: 16px 18px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .card-question {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.45;
+    flex: 1;
+  }
+
+  .status-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+    padding: 4px 8px;
+    border-radius: 5px;
+    margin-top: 2px;
+  }
+
+  .status-badge.live { background: rgba(0,217,126,0.1); color: var(--green); }
+  .status-badge.settled { background: var(--surface2); color: var(--muted); }
+
+  .status-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+  .status-badge.live .status-dot { animation: pulse 1.2s ease-in-out infinite; }
+
+  /* PRICE ROW */
+  .price-row {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+  }
+
+  .price-block {
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .price-label {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .price-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+
+  .price-unit {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    margin-left: 3px;
+    font-weight: 400;
+  }
+
+  .divider {
+    width: 1px;
+    height: 40px;
+    background: var(--border);
+    margin: 0 20px;
+    flex-shrink: 0;
+  }
+
+  .direction-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: 'Space Mono', monospace;
+    margin-top: 5px;
+  }
+
+  .up-pill { background: rgba(0,217,126,0.12); color: var(--green); }
+  .down-pill { background: rgba(255,77,109,0.12); color: var(--red); }
+  .flat-pill { background: var(--surface2); color: var(--muted); }
+
+  /* TIMER */
+  .timer-row {
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .timer-label { font-size: 12px; color: var(--muted); flex-shrink: 0; }
+  .timer-val { font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; flex-shrink: 0; min-width: 44px; }
+
+  .timer-track {
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .timer-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1s linear, background 0.5s;
+  }
+
+  /* ODDS */
+  .odds-row {
+    padding: 14px 18px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .odds-card {
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1.5px solid transparent;
+    transition: filter 0.15s;
+    cursor: default;
+  }
+
+  .odds-card:hover { filter: brightness(1.1); }
+
+  .odds-card.yes {
+    background: rgba(0,217,126,0.08);
+    border-color: rgba(0,217,126,0.2);
+  }
+
+  .odds-card.no {
+    background: rgba(255,77,109,0.08);
+    border-color: rgba(255,77,109,0.2);
+  }
+
+  .odds-left {}
+
+  .odds-direction {
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+
+  .odds-direction.yes { color: var(--green); }
+  .odds-direction.no  { color: var(--red); }
+
+  .odds-chance {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .odds-price-wrap { text-align: right; }
+
+  .odds-price {
+    font-family: 'Space Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    display: block;
+  }
+
+  .odds-price.yes { color: var(--green); }
+  .odds-price.no  { color: var(--red); }
+
+  .odds-sublabel {
+    font-size: 10px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    display: block;
+    margin-top: 2px;
+  }
+
+  /* META */
+  .meta-row {
+    padding: 10px 18px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .meta-item { display: flex; flex-direction: column; gap: 2px; }
+  .meta-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .meta-val { font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; }
+
+  /* LOADING */
+  .loading-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 48px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .spinner {
+    width: 26px; height: 26px;
+    border: 2px solid var(--border);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto 14px;
+  }
+
+  /* ERROR */
+  .error-card {
+    background: rgba(255,77,109,0.06);
+    border: 1px solid rgba(255,77,109,0.2);
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 13px;
+    color: #ff8099;
+    margin-bottom: 14px;
+    font-family: 'Space Mono', monospace;
+    line-height: 1.6;
+  }
+
+  .no-market {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 32px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .no-market .slug {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    margin-top: 8px;
+    color: #3a3a45;
+  }
+
+  @media (max-width: 580px) {
+    .odds-row { grid-template-columns: 1fr; }
+    .divider { display: none; }
+    .price-block { min-width: 100%; }
+    .clock { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="live-dot"></div>
+    CryptoMarkets
+  </div>
+  <div class="header-tabs">
+    <button class="tab active" data-interval="5m" onclick="switchInterval('5m',this)">5 min</button>
+    <button class="tab" data-interval="15m" onclick="switchInterval('15m',this)">15 min</button>
+  </div>
+  <div class="clock" id="clock">--:--:-- UTC</div>
+</header>
+
+<div class="asset-bar">
+  <div class="asset-tab active" data-asset="btc" onclick="switchAsset('btc',this)">
+    <div class="asset-icon btc">₿</div> Bitcoin
+  </div>
+  <div class="asset-tab" data-asset="eth" onclick="switchAsset('eth',this)">
+    <div class="asset-icon eth">Ξ</div> Ethereum
+  </div>
+  <div class="asset-tab" data-asset="sol" onclick="switchAsset('sol',this)">
+    <div class="asset-icon sol">◎</div> Solana
+  </div>
+  <div class="asset-tab" data-asset="xrp" onclick="switchAsset('xrp',this)">
+    <div class="asset-icon xrp">✕</div> XRP
+  </div>
+</div>
+
+<div class="main">
+  <div class="top-row">
+    <div class="section-title" id="section-title">BTC · 5-minute markets</div>
+    <button class="refresh-btn" id="refresh-btn" onclick="loadAll()">
+      <span>↻</span> Refresh
+    </button>
+  </div>
+  <div id="container">
+    <div class="loading-box"><div class="spinner"></div>Loading live market data...</div>
+  </div>
+</div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let asset    = 'btc';
+let interval = '5m';
+let refreshT = null;
+let tickTs   = [];
+
+// ── CLOCK ─────────────────────────────────────────────────────────────────────
+setInterval(() => {
+  const n = new Date();
+  document.getElementById('clock').textContent =
+    [n.getUTCHours(),n.getUTCMinutes(),n.getUTCSeconds()]
+      .map(v=>String(v).padStart(2,'0')).join(':') + ' UTC';
+}, 1000);
+
+// ── SLUG MATH ─────────────────────────────────────────────────────────────────
+function windowTs(intervalMin, offset=0) {
+  const sec = Math.floor(Date.now()/1000);
+  const step = intervalMin * 60;
+  return (sec - (sec % step)) + offset * step;
+}
+
+function slug(a, iv, ts) {
+  return `${a}-updown-${iv}-${ts}`;
+}
+
+// ── API (calls our own Vercel /api routes) ────────────────────────────────────
+async function getMarket(s) {
+  const r = await fetch(`/api/market?slug=${s}`);
+  if (!r.ok) throw new Error('market fetch failed');
+  const d = await r.json();
+  return Array.isArray(d) && d.length ? d[0] : null;
+}
+
+async function getPrice(tokenId) {
+  const r = await fetch(`/api/price?token_id=${tokenId}`);
+  if (!r.ok) return null;
+  return r.json();
+}
+
+// Binance — no CORS issues, call directly
+async function getCryptoPrice(a) {
+  const sym = {btc:'BTCUSDT',eth:'ETHUSDT',sol:'SOLUSDT',xrp:'XRPUSDT'}[a];
+  try {
+    const r = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${sym}`,
+      { signal: AbortSignal.timeout(4000) });
+    if (r.ok) return parseFloat((await r.json()).price);
+  } catch(e) {}
+  return null;
+}
+
+// ── FORMAT ────────────────────────────────────────────────────────────────────
+function fmt(n, dec=2) {
+  if (n==null||isNaN(n)) return '—';
+  return parseFloat(n).toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+}
+
+function fmtMoney(n) {
+  if (!n) return '—';
+  const v = parseFloat(n);
+  if (v>=1e6) return '$'+(v/1e6).toFixed(2)+'M';
+  if (v>=1e3) return '$'+(v/1e3).toFixed(1)+'K';
+  return '$'+v.toFixed(2);
+}
+
+function fmtTime(s) {
+  return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+}
+
+function decimals(a) { return (a==='xrp'||a==='sol') ? 4 : 2; }
+
+// ── RENDER CARD ───────────────────────────────────────────────────────────────
+function renderCard(market, priceData, cryptoPrice, wts, intervalMin) {
+  const step    = intervalMin * 60;
+  const endSec  = wts + step;
+  const nowSec  = Math.floor(Date.now()/1000);
+  const secsLeft = Math.max(0, endSec - nowSec);
+  const isLive  = secsLeft > 0;
+  const pct     = Math.max(0, Math.min(100, (secsLeft / step) * 100));
+
+  // Prices
+  const outcomes = JSON.parse(market.outcomes || '["Yes","No"]');
+  const opArr    = JSON.parse(market.outcomePrices || '[0.5,0.5]');
+  let yp = parseFloat(priceData?.buy?.price ?? opArr[0]);
+  let np = parseFloat(priceData?.sell?.price ?? opArr[1]);
+  // ensure they sum to ~1
+  if (isNaN(yp)) yp = 0.5;
+  if (isNaN(np)) np = 1 - yp;
+  const yPct = Math.round(yp * 100);
+  const nPct = Math.round(np * 100);
+  const yCents = Math.round(yp * 100);
+  const nCents = Math.round(np * 100);
+
+  // Price to beat — extract from question string
+  const q = market.question || '';
+  const priceMatch = q.match(/\$([\d,]+\.?\d*)/);
+  const priceToBeat = priceMatch ? parseFloat(priceMatch[1].replace(/,/g,'')) : null;
+  const dec = decimals(asset);
+
+  // Direction
+  let dirEl = '';
+  if (cryptoPrice && priceToBeat) {
+    const diff    = cryptoPrice - priceToBeat;
+    const diffPct = ((diff / priceToBeat) * 100).toFixed(3);
+    if (diff > 0)      dirEl = `<div class="direction-pill up-pill">▲ UP &nbsp;+${diffPct}%</div>`;
+    else if (diff < 0) dirEl = `<div class="direction-pill down-pill">▼ DOWN ${diffPct}%</div>`;
+    else               dirEl = `<div class="direction-pill flat-pill">→ FLAT</div>`;
+  }
+
+  // Timer bar color
+  const barColor = pct < 20 ? 'var(--red)' : pct < 40 ? 'var(--amber)' : 'var(--green)';
+  const cid      = `c${wts}`;
+
+  return `
+  <div class="market-card ${isLive?'live':''}" id="card-${wts}">
+    <div class="card-header">
+      <div class="card-question">${market.question || slug(asset,interval,wts)}</div>
+      <div class="status-badge ${isLive?'live':'settled'}">
+        <div class="status-dot"></div>
+        ${isLive ? 'LIVE' : 'SETTLED'}
+      </div>
+    </div>
+
+    <div class="price-row">
+      <div class="price-block">
+        <div class="price-label">Price to beat</div>
+        <div class="price-value">
+          ${priceToBeat ? '$'+fmt(priceToBeat, dec) : '—'}
+          <span class="price-unit">${asset.toUpperCase()}/USD</span>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="price-block">
+        <div class="price-label">Current price</div>
+        <div class="price-value">
+          ${cryptoPrice ? '$'+fmt(cryptoPrice, dec) : '—'}
+          <span class="price-unit">${asset.toUpperCase()}/USD</span>
+        </div>
+        ${dirEl}
+      </div>
+    </div>
+
+    ${isLive ? `
+    <div class="timer-row">
+      <div class="timer-label">Closes in</div>
+      <div class="timer-val" id="tv-${wts}">${fmtTime(secsLeft)}</div>
+      <div class="timer-track">
+        <div class="timer-fill" id="tf-${wts}" style="width:${pct}%;background:${barColor}"></div>
+      </div>
+    </div>` : ''}
+
+    <div class="odds-row">
+      <div class="odds-card yes">
+        <div class="odds-left">
+          <div class="odds-direction yes">↑ YES · Up</div>
+          <div class="odds-chance">${yPct}% chance</div>
+        </div>
+        <div class="odds-price-wrap">
+          <span class="odds-price yes">¢${yCents}</span>
+          <span class="odds-sublabel">per share</span>
+        </div>
+      </div>
+      <div class="odds-card no">
+        <div class="odds-left">
+          <div class="odds-direction no">↓ NO · Down</div>
+          <div class="odds-chance">${nPct}% chance</div>
+        </div>
+        <div class="odds-price-wrap">
+          <span class="odds-price no">¢${nCents}</span>
+          <span class="odds-sublabel">per share</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="meta-row">
+      <div class="meta-item">
+        <div class="meta-label">Volume</div>
+        <div class="meta-val">${fmtMoney(market.volume)}</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Liquidity</div>
+        <div class="meta-val">${fmtMoney(market.liquidity)}</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Window start</div>
+        <div class="meta-val">${new Date(wts*1000).toUTCString().slice(17,25)} UTC</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Window end</div>
+        <div class="meta-val">${new Date(endSec*1000).toUTCString().slice(17,25)} UTC</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── COUNTDOWNS ────────────────────────────────────────────────────────────────
+let cdTimer = null;
+
+function startCountdowns(intervalMin) {
+  if (cdTimer) clearInterval(cdTimer);
+  cdTimer = setInterval(() => {
+    let anyExpired = false;
+    tickTs.forEach(wts => {
+      const endSec   = wts + intervalMin * 60;
+      const secsLeft = Math.max(0, endSec - Math.floor(Date.now()/1000));
+      const pct      = Math.max(0, Math.min(100, (secsLeft/(intervalMin*60))*100));
+      const tv = document.getElementById(`tv-${wts}`);
+      const tf = document.getElementById(`tf-${wts}`);
+      if (tv) tv.textContent = fmtTime(secsLeft);
+      if (tf) {
+        tf.style.width = pct + '%';
+        tf.style.background = pct<20?'var(--red)':pct<40?'var(--amber)':'var(--green)';
+      }
+      if (secsLeft === 0) anyExpired = true;
+    });
+    if (anyExpired) { clearInterval(cdTimer); setTimeout(loadAll, 4000); }
+  }, 1000);
+}
+
+// ── LOAD ──────────────────────────────────────────────────────────────────────
+async function loadAll() {
+  clearTimeout(refreshT);
+  const intervalMin = interval === '5m' ? 5 : 15;
+  const container   = document.getElementById('container');
+  const btn         = document.getElementById('refresh-btn');
+
+  btn.classList.add('spinning');
+  container.innerHTML = `<div class="loading-box"><div class="spinner"></div>Fetching live data...</div>`;
+
+  const cryptoPrice = await getCryptoPrice(asset);
+
+  // Try current window + next window
+  const windows = [0, 1].map(o => windowTs(intervalMin, o));
+  tickTs = windows;
+
+  let html = '';
+  let errors = 0;
+
+  for (const wts of windows) {
+    const s = slug(asset, interval, wts);
+    try {
+      const market = await getMarket(s);
+      if (!market) {
+        html += `<div class="no-market">No market found for this window<div class="slug">${s}</div></div>`;
+        continue;
+      }
+
+      let priceData = null;
+      if (market.clobTokenIds) {
+        const ids = JSON.parse(market.clobTokenIds);
+        if (ids[0]) priceData = await getPrice(ids[0]);
+      }
+
+      html += renderCard(market, priceData, cryptoPrice, wts, intervalMin);
+    } catch(e) {
+      errors++;
+      html += `<div class="error-card">Error loading ${s}: ${e.message}</div>`;
+    }
+  }
+
+  container.innerHTML = html;
+  btn.classList.remove('spinning');
+  startCountdowns(intervalMin);
+
+  // Auto-refresh every 30s
+  refreshT = setTimeout(loadAll, 30000);
+}
+
+// ── CONTROLS ──────────────────────────────────────────────────────────────────
+function switchInterval(iv, btn) {
+  interval = iv;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  updateTitle();
+  loadAll();
+}
+
+function switchAsset(a, el) {
+  asset = a;
+  document.querySelectorAll('.asset-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  updateTitle();
+  loadAll();
+}
+
+function updateTitle() {
+  document.getElementById('section-title').textContent =
+    `${asset.toUpperCase()} · ${interval === '5m' ? '5-minute' : '15-minute'} markets`;
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+loadAll();
+</script>
+</body>
+</html>
